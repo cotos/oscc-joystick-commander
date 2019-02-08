@@ -60,16 +60,19 @@ int main( int argc, char **argv )
     sig.sa_handler = signal_handler;
     sigaction( SIGINT, &sig, NULL );
 
-    ret = commander_init( channel );
+    ret = control_init( channel );
+
+    // ret = commander_init( channel );
 
     if ( ret == OSCC_OK )
     {
-        printf( "\nControl Ready:\n" );
-        printf( "    START - Enable controls\n" );
-        printf( "    BACK - Disable controls\n" );
-        printf( "    LEFT TRIGGER - Brake\n" );
-        printf( "    RIGHT TRIGGER - Throttle\n" );
-        printf( "    LEFT STICK - Steering\n" );
+        printf("\nTest steering torque ranges")
+        // printf( "\nControl Ready:\n" );
+        // printf( "    START - Enable controls\n" );
+        // printf( "    BACK - Disable controls\n" );
+        // printf( "    LEFT TRIGGER - Brake\n" );
+        // printf( "    RIGHT TRIGGER - Throttle\n" );
+        // printf( "    LEFT STICK - Steering\n" );
 
         while ( ret == OSCC_OK && error_thrown == OSCC_OK )
         {
@@ -79,7 +82,9 @@ int main( int argc, char **argv )
             {
                 update_timestamp = get_timestamp_micro();
 
-                ret = check_for_controller_update( );
+                ret = test_steering_torque_cmds( );
+
+                // ret = check_for_controller_update( );
             }
 
             // Delay 1 ms to avoid loading the CPU

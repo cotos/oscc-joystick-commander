@@ -50,7 +50,7 @@ static int commander_enable_controls( );
 static int get_button( unsigned long button, unsigned int* const state );
 static int command_brakes( );
 static int command_throttle( );
-static int command_steering( );
+static int command_steering( double torque );
 static void brake_callback(oscc_brake_report_s *report);
 static void throttle_callback(oscc_throttle_report_s *report);
 static void steering_callback(oscc_steering_report_s *report);
@@ -122,6 +122,38 @@ void commander_close( int channel )
         commander_enabled = COMMANDER_DISABLED;
     }
 }
+
+int control_init( int channel )
+{
+    int return_code = OSCC_ERROR;
+
+    if ( commander_enabled == COMMANDER_DISABLED )
+    {
+        commander_enabled = COMMANDER_ENABLED;
+
+        return_code = oscc_open( channel );
+
+        if ( return_code != OSCC_ERROR )
+        {
+            // register callback handlers
+            oscc_subscribe_to_obd_messages(obd_callback);
+            oscc_subscribe_to_brake_reports(brake_callback);
+            oscc_subscribe_to_steering_reports(steering_callback);
+            oscc_subscribe_to_throttle_reports(throttle_callback);
+            oscc_subscribe_to_fault_reports(fault_callback);
+        }
+    }
+}
+
+
+int test_steering_torque_cmds ( )
+{
+    printf( "Enable brake, throttle, and steering control\n" );
+
+    return_code = oscc_enable();
+}
+
+
 
 int check_for_controller_update( )
 {
@@ -428,7 +460,7 @@ static int command_throttle( )
 // the game controller. Since the car will fault if it detects too much discontinuity
 // between spoofed output signals, we use an exponential average filter to smooth
 // our output.
-static int command_steering( )
+static int command_steering( double torque )
 {
     int return_code = OSCC_ERROR;
 
@@ -436,21 +468,22 @@ static int command_steering( )
 
     if ( commander_enabled == COMMANDER_ENABLED && control_enabled == true )
     {
-        double normalized_position = 0;
+        return_code = oscc_publish_steering_torque ( torque );
+        // double normalized_position = 0;
 
-        return_code = get_normalized_position( JOYSTICK_AXIS_STEER, &normalized_position );
+        // return_code = get_normalized_position( JOYSTICK_AXIS_STEER, &normalized_position );
 
-        if( return_code == OSCC_OK )
-        {
-            average = calc_exponential_average(
-                average,
-                normalized_position,
-                STEERING_FILTER_FACTOR);
+        // if( return_code == OSCC_OK )
+        // {
+        //     average = calc_exponential_average(
+        //         average,
+        //         normalized_position,
+        //         STEERING_FILTER_FACTOR);
 
-            printf("Steering: %f\n", average);
+        //     printf("Steering: %f\n", average);
 
             // use only 20% of allowable range for controllability
-            return_code = oscc_publish_steering_torque( average * STEERING_RANGE_PERCENTAGE );
+            // return_code = oscc_publish_steering_torque( average * STEERING_RANGE_PERCENTAGE );
         }
     }
     else
